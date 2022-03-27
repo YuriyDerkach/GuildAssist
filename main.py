@@ -80,8 +80,21 @@ class Events:
                 ]
             ]
         )
+        event_name += '\nID: {}\nLeader: {}'.format(self.event_msg.id, msg.author.name)
+        await self.event_msg.edit(
+            embed=discord.Embed(
+                title=event_name,
+                description=self.event_description
+            ),
+            components=[
+                [
+                    Button(style=ButtonStyle.blue, label=self.game_roles[0]),
+                    Button(style=ButtonStyle.green, label=self.game_roles[1]),
+                    Button(style=ButtonStyle.red, label=self.game_roles[2])
+                ]
+            ]
+        )
         while True:
-            print(self.event_members)
             response = await bot.wait_for('button_click')
             await self.event_join(response, event_name)
 
