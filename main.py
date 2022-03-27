@@ -55,10 +55,11 @@ class Events:
         self.event_description = 'Tanks:\n{}\n' \
                                  'Healers:\n{}\n' \
                                  'Damage dealers:\n{}'.format(
-            self.event_members['Tanks'],
-            self.event_members['Healers'],
-            self.event_members['Damage dealers'],
-        )
+                                                                '\n'.join(self.event_members['Tanks']),
+                                                                '\n'.join(self.event_members['Healers']),
+                                                                '\n'.join(self.event_members['Damage dealers']),
+                                                             )
+        self.event_msg = None
 
     async def add_event(self, msg):
         name_choice = await self.name_choice(msg)
@@ -66,7 +67,7 @@ class Events:
         channel_choice = await self.channel_choice(name_choice)
         channel_name = channel_choice.component.label
         await bot_install.guild_channels[channel_name].send(content='@everyone')
-        event_msg = await bot_install.guild_channels[channel_name].send(
+        self.event_msg = await bot_install.guild_channels[channel_name].send(
             embed=discord.Embed(
                 title=event_name,
                 description=self.event_description
@@ -79,8 +80,10 @@ class Events:
                 ]
             ]
         )
-        response = await bot.wait_for('button_click')
-        await self.event_join(event_msg, response)
+        while True:
+            print(self.event_members)
+            response = await bot.wait_for('button_click')
+            await self.event_join(response, event_name)
 
     async def name_choice(self, msg):
         await msg.respond(
@@ -106,27 +109,72 @@ class Events:
         )
         return await bot.wait_for('button_click')
 
-    async def event_join(self, event_msg, response):
+    async def event_join(self, response, event_name):
         if response.component.label == 'Tank':
-            self.event_members['Tanks'].append(response.author.nick)
-            event_msg.edit(
+            self.event_members['Tanks'].append(response.author.name)
+            self.event_description = 'Tanks:\n{}\n' \
+                                     'Healers:\n{}\n' \
+                                     'Damage dealers:\n{}'.format(
+                                                                    '\n'.join(self.event_members['Tanks']),
+                                                                    '\n'.join(self.event_members['Healers']),
+                                                                    '\n'.join(self.event_members['Damage dealers']),
+                                                                 )
+            await self.event_msg.edit(
                 embed=discord.Embed(
+                    title=event_name,
                     description=self.event_description
-                )
+                ),
+                components=[
+                    [
+                        Button(style=ButtonStyle.blue, label=self.game_roles[0]),
+                        Button(style=ButtonStyle.green, label=self.game_roles[1]),
+                        Button(style=ButtonStyle.red, label=self.game_roles[2])
+                    ]
+                ]
             )
         elif response.component.label == 'Healer':
-            self.event_members['Healers'].append(response.author.nick)
-            event_msg.edit(
+            self.event_members['Healers'].append(response.author.name)
+            self.event_description = 'Tanks:\n{}\n' \
+                                     'Healers:\n{}\n' \
+                                     'Damage dealers:\n{}'.format(
+                                                                    '\n'.join(self.event_members['Tanks']),
+                                                                    '\n'.join(self.event_members['Healers']),
+                                                                    '\n'.join(self.event_members['Damage dealers']),
+                                                                 )
+            await self.event_msg.edit(
                 embed=discord.Embed(
+                    title=event_name,
                     description=self.event_description
-                )
+                ),
+                components=[
+                    [
+                        Button(style=ButtonStyle.blue, label=self.game_roles[0]),
+                        Button(style=ButtonStyle.green, label=self.game_roles[1]),
+                        Button(style=ButtonStyle.red, label=self.game_roles[2])
+                    ]
+                ]
             )
         elif response.component.label == 'Damage dealer':
-            self.event_members['Damage dealers'].append(response.author.nick)
-            event_msg.edit(
+            self.event_members['Damage dealers'].append(response.author.name)
+            self.event_description = 'Tanks:\n{}\n' \
+                                     'Healers:\n{}\n' \
+                                     'Damage dealers:\n{}'.format(
+                                                                    '\n'.join(self.event_members['Tanks']),
+                                                                    '\n'.join(self.event_members['Healers']),
+                                                                    '\n'.join(self.event_members['Damage dealers']),
+                                                                 )
+            await self.event_msg.edit(
                 embed=discord.Embed(
+                    title=event_name,
                     description=self.event_description
-                )
+                ),
+                components=[
+                    [
+                        Button(style=ButtonStyle.blue, label=self.game_roles[0]),
+                        Button(style=ButtonStyle.green, label=self.game_roles[1]),
+                        Button(style=ButtonStyle.red, label=self.game_roles[2])
+                    ]
+                ]
             )
 
 
