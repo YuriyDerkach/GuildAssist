@@ -136,7 +136,7 @@ class Events:
                                                                     '\n'.join(self.event_members['Healers']),
                                                                     '\n'.join(self.event_members['Damage dealers']),
                                                                  )
-            await self.event_msg.edit(
+            await response.edit_origin(
                 embed=discord.Embed(
                     title=event_name,
                     description=self.event_description
@@ -162,7 +162,7 @@ class Events:
                                                                     '\n'.join(self.event_members['Healers']),
                                                                     '\n'.join(self.event_members['Damage dealers']),
                                                                  )
-            await self.event_msg.edit(
+            await response.edit_origin(
                 embed=discord.Embed(
                     title=event_name,
                     description=self.event_description
@@ -189,7 +189,7 @@ class Events:
                                                                     '\n'.join(self.event_members['Healers']),
                                                                     '\n'.join(self.event_members['Damage dealers']),
                                                                  )
-            await self.event_msg.edit(
+            await response.edit_origin(
                 embed=discord.Embed(
                     title=event_name,
                     description=self.event_description
