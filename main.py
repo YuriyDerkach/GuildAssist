@@ -110,7 +110,11 @@ class Events:
         return await bot.wait_for('button_click')
 
     async def event_join(self, response, event_name):
-        if response.component.label == 'Tank':
+        if response.component.label == 'Tank' and response.author.name not in self.event_members['Tanks']:
+            if response.author.name in self.event_members['Healers']:
+                self.event_members['Healers'].remove(response.author.name)
+            elif response.author.name in self.event_members['Damage dealers']:
+                self.event_members['Damage dealers'].remove(response.author.name)
             self.event_members['Tanks'].append(response.author.name)
             self.event_description = 'Tanks:\n{}\n' \
                                      'Healers:\n{}\n' \
@@ -132,7 +136,11 @@ class Events:
                     ]
                 ]
             )
-        elif response.component.label == 'Healer':
+        elif response.component.label == 'Healer' and response.author.name not in self.event_members['Healers']:
+            if response.author.name in self.event_members['Tanks']:
+                self.event_members['Tanks'].remove(response.author.name)
+            elif response.author.name in self.event_members['Damage dealers']:
+                self.event_members['Damage dealers'].remove(response.author.name)
             self.event_members['Healers'].append(response.author.name)
             self.event_description = 'Tanks:\n{}\n' \
                                      'Healers:\n{}\n' \
@@ -154,7 +162,12 @@ class Events:
                     ]
                 ]
             )
-        elif response.component.label == 'Damage dealer':
+        elif response.component.label == 'Damage dealer' and \
+                response.author.name not in self.event_members['Damage dealers']:
+            if response.author.name in self.event_members['Tanks']:
+                self.event_members['Tanks'].remove(response.author.name)
+            elif response.author.name in self.event_members['Healers']:
+                self.event_members['Healers'].remove(response.author.name)
             self.event_members['Damage dealers'].append(response.author.name)
             self.event_description = 'Tanks:\n{}\n' \
                                      'Healers:\n{}\n' \
