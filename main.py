@@ -52,13 +52,9 @@ class Events:
             'Healers': [],
             'Damage dealers': []
         }
-        self.event_description = 'Tanks:\n{}\n' \
-                                 'Healers:\n{}\n' \
-                                 'Damage dealers:\n{}'.format(
-                                                                '\n'.join(self.event_members['Tanks']),
-                                                                '\n'.join(self.event_members['Healers']),
-                                                                '\n'.join(self.event_members['Damage dealers']),
-                                                             )
+        self.new_line = '\n'
+        self.event_description = \
+            '\n'.join([f'{key}:\n{self.new_line.join(self.event_members[key])}\n' for key in self.event_members])
         self.event_msg = None
 
     async def add_event(self, msg):
@@ -129,13 +125,8 @@ class Events:
             elif response.author.name in self.event_members['Damage dealers']:
                 self.event_members['Damage dealers'].remove(response.author.name)
             self.event_members['Tanks'].append(response.author.name)
-            self.event_description = 'Tanks:\n{}\n' \
-                                     'Healers:\n{}\n' \
-                                     'Damage dealers:\n{}'.format(
-                                                                    '\n'.join(self.event_members['Tanks']),
-                                                                    '\n'.join(self.event_members['Healers']),
-                                                                    '\n'.join(self.event_members['Damage dealers']),
-                                                                 )
+            self.event_description = '\n'.join([f'{key}:\n{self.new_line.join(self.event_members[key])}\n' \
+                                                for key in self.event_members])
             await response.edit_origin(
                 embed=discord.Embed(
                     title=event_name,
@@ -155,13 +146,8 @@ class Events:
             elif response.author.name in self.event_members['Damage dealers']:
                 self.event_members['Damage dealers'].remove(response.author.name)
             self.event_members['Healers'].append(response.author.name)
-            self.event_description = 'Tanks:\n{}\n' \
-                                     'Healers:\n{}\n' \
-                                     'Damage dealers:\n{}'.format(
-                                                                    '\n'.join(self.event_members['Tanks']),
-                                                                    '\n'.join(self.event_members['Healers']),
-                                                                    '\n'.join(self.event_members['Damage dealers']),
-                                                                 )
+            self.event_description = '\n'.join([f'{key}:\n{self.new_line.join(self.event_members[key])}\n' \
+                                                for key in self.event_members])
             await response.edit_origin(
                 embed=discord.Embed(
                     title=event_name,
@@ -182,13 +168,8 @@ class Events:
             elif response.author.name in self.event_members['Healers']:
                 self.event_members['Healers'].remove(response.author.name)
             self.event_members['Damage dealers'].append(response.author.name)
-            self.event_description = 'Tanks:\n{}\n' \
-                                     'Healers:\n{}\n' \
-                                     'Damage dealers:\n{}'.format(
-                                                                    '\n'.join(self.event_members['Tanks']),
-                                                                    '\n'.join(self.event_members['Healers']),
-                                                                    '\n'.join(self.event_members['Damage dealers']),
-                                                                 )
+            self.event_description = '\n'.join([f'{key}:\n{self.new_line.join(self.event_members[key])}\n' \
+                                                for key in self.event_members])
             await response.edit_origin(
                 embed=discord.Embed(
                     title=event_name,
