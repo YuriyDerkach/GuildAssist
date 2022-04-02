@@ -218,21 +218,24 @@ async def on_message(message):
                     sql_connection(f'INSERT INTO text_channels VALUES'
                                    f'({channel.id}, \'{channel.name}\', {message.guild.id})')
         for role in bot.get_guild(message.guild.id).roles:
+            if role.id == message.guild.id:
+                continue
             bot_install.guild_roles[role.name] = role
             if role.permissions.manage_messages:
                 admin_menu.admin_roles[role.name] = role
                 if role.name not in sql_connection('SELECT role_name FROM guild_roles'):
                     sql_connection(f'INSERT INTO guild_roles VALUES'
-                                   f'(\'{role.name}\', 1, {message.guild.id})')
+                                   f'({role.id}, \'{role.name}\', 1, {message.guild.id})')
             if role.name not in sql_connection('SELECT role_name FROM guild_roles'):
                 sql_connection(f'INSERT INTO guild_roles VALUES'
-                               f'(\'{role.name}\', 2, {message.guild.id})')
+                               f'({role.id}, \'{role.name}\', 2, {message.guild.id})')
         events.event_channels_buttons = \
             [Button(style=ButtonStyle.gray, label=channel) for channel in bot_install.guild_channels.keys()]
         print('Bot installed')
 
     if message.content == '!menu':
-        if set(message.author.roles) & set(admin_menu.admin_roles.values()):
+        if set([role.id for role in message.author.roles]) & \
+                set(sql_connection('SELECT role_id FROM guild_roles WHERE admin=1')):
             print('i can admin')
             await message.delete()
             await admin_menu.open_menu(message)
@@ -240,8 +243,17 @@ async def on_message(message):
             print('i cant admin')
 
     if message.content == '!test':
-        await message.author.send(content='test')
-        await message.delete()
+        msg = await message.channel.send(content='test')
+        msg_id = msg.id
+        msgg = await bot.get_channel(message.channel.id).fetch_message(msg_id)
+        await msgg.edit(content='edited')
+
+    # reply - не то
+    if message.content == '!test2':
+        msg_id = message.id
+        msg = await bot.get_channel(message.channel.id).fetch_message(msg_id)
+        print(msg)
+        await msg.reply(content='test2')
 
 
 if __name__ == '__main__':
