@@ -1,6 +1,7 @@
 import discord
 from discord_components import DiscordComponents, Button, ButtonStyle, Select, SelectOption
 import configs
+import sqlite3 as sql
 
 bot = discord.Client()
 
@@ -62,7 +63,7 @@ class Events:
         event_name = name_choice.component.label
         channel_choice = await self.channel_choice(name_choice)
         channel_name = channel_choice.component.label
-        await bot_install.guild_channels[channel_name].send(content='@everyone')
+        # await bot_install.guild_channels[channel_name].send(content='@everyone')
         self.event_msg = await bot_install.guild_channels[channel_name].send(
             embed=discord.Embed(
                 title=event_name,
@@ -185,6 +186,16 @@ class Events:
             )
 
 
+def sql_connection(sql_request):
+    with sql.connect('bot.db') as db:
+        cur = db.cursor()
+        cur.execute(sql_request)
+        if 'SELECT' in sql_request:
+            result = cur.fetchall()
+    if 'SELECT' in sql_request:
+        print(result)
+        return result
+
 @bot.event
 async def on_ready():
     DiscordComponents(bot)
@@ -196,15 +207,27 @@ async def on_message(message):
     if bot_install.guild_id == None:
         print('Installing bot')
         bot_install.guild_id = message.guild.id
+        if bot_install.guild_id not in sql_connection('SELECT guild_id FROM guilds'):
+            sql_connection(f'INSERT INTO guilds VALUES({message.guild.id}, {message.guild.name})')
         for channel in bot.get_guild(message.guild.id).channels:
             if isinstance(channel, discord.TextChannel):
                 bot_install.guild_channels[channel.name] = channel
+                if channel.id not in sql_connection('SELECT channel_id FROM text_channels'):
+                    sql_connection(f'INSERT INTO text_channels VALUES'
+                                   f'({channel.id}, {channel.name}, {channel}, {message.guild.id})')
         for role in bot.get_guild(message.guild.id).roles:
             bot_install.guild_roles[role.name] = role
             if role.permissions.manage_messages:
                 admin_menu.admin_roles[role.name] = role
+                if role.name not in sql_connection('SELECT role_name FROM guild_roles'):
+                    sql_connection(f'INSERT INTO text_channels VALUES'
+                                   f'({role.name}, 1, {message.guild.id})')
+            if role.name not in sql_connection('SELECT role_name FROM guild_roles'):
+                sql_connection(f'INSERT INTO text_channels VALUES'
+                               f'({role.name}, 2, {message.guild.id})')
         events.event_channels_buttons = \
             [Button(style=ButtonStyle.gray, label=channel) for channel in bot_install.guild_channels.keys()]
+        print('Bot installed')
 
     if message.content == '!menu':
         if set(message.author.roles) & set(admin_menu.admin_roles.values()):
