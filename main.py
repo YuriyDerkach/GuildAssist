@@ -2,6 +2,7 @@ import discord
 from discord_components import DiscordComponents, Button, ButtonStyle, Select, SelectOption
 import configs
 import sqlite3 as sql
+import datetime
 
 bot = discord.Client()
 
@@ -48,8 +49,7 @@ class Menu:
             embed=discord.Embed(title='Admin menu:', description=self.menu_description),
             components=[
                 [
-                    Button(style=ButtonStyle.green, label='Add event'),
-                    Button(style=ButtonStyle.red, label='Close')
+                    Button(style=ButtonStyle.green, label='Add event')
                 ]
             ]
         )
@@ -59,11 +59,25 @@ class Menu:
             ]
         ])
         response = await bot.wait_for('button_click', check=lambda i: i.author == msg.author)
-        while True:
-            if response.component.label == 'Add event':
-                await self.event_choice(msg, response, author_nick)
+        if response.component.label == 'Add event':
+            await self.event_choice(msg, response, author_nick)
+            await show_admin_menu.delete()
 
     async def event_choice(self, msg, response, author_nick):
+        today = datetime.datetime.now().date()
+        days = [today + datetime.timedelta(days=day) for day in range(7)]
+        days_selections = [
+            SelectOption(
+                label=str(day.strftime("%d %B %Y (%A)")),
+                value=str(day.strftime("%d %B %Y (%A)"))
+            ) for day in days
+        ]
+        time_selections = [
+            SelectOption(
+                label=f'{str(hour)}:00',
+                value=f'{str(hour)}:00'
+            ) for hour in range(24)
+        ]
         event_settings = {}
         menu_msg = await response.author.send(
             embed=discord.Embed(
@@ -122,13 +136,55 @@ class Menu:
                                     f"Канал для отправки: {event_settings['Channel']}"
                     ),
                     components=[
-                        Button(label='Создать', style=ButtonStyle.green, custom_id='10')
+                        Select(
+                            placeholder='День',
+                            custom_id='02',
+                            options=days_selections
+                        ),
+                        Button(label='Создать', style=ButtonStyle.green, custom_id='10', disabled=True)
                     ]
                 )
-                response = await bot.wait_for('button_click', check=lambda i: i.author == msg.author)
-                if response.custom_id == '10':
-                    await menu_msg.delete()
-                    await events.add_event(event_settings)
+                interaction = await bot.wait_for('select_option', check=lambda i: i.author == msg.author)
+                if interaction.custom_id == '02':
+                    event_settings['Date'] = interaction.values[0]
+                    await interaction.edit_origin(
+                        embed=discord.Embed(
+                            title='Добавление события',
+                            description=f"Выберите все настройки, представленные ниже для добавления события.\n\n"
+                                        f"Событие: {event_settings['Name']}\n"
+                                        f"Тип события: {event_settings['Type']}\n"
+                                        f"Канал для отправки: {event_settings['Channel']}\n"
+                                        f"Дата: {event_settings['Date']}"
+                        ),
+                        components=[
+                            Select(
+                                placeholder='Время',
+                                custom_id='03',
+                                options=time_selections
+                            ),
+                            Button(label='Создать', style=ButtonStyle.green, custom_id='10', disabled=True)
+                        ]
+                    )
+                    interaction = await bot.wait_for('select_option', check=lambda i: i.author == msg.author)
+                    if interaction.custom_id == '03':
+                        event_settings['Time'] = interaction.values[0]
+                        await interaction.edit_origin(
+                            embed=discord.Embed(
+                                title='Добавление события',
+                                description=f"Выберите все настройки, представленные ниже для добавления события.\n\n"
+                                            f"Событие: {event_settings['Name']}\n"
+                                            f"Тип события: {event_settings['Type']}\n"
+                                            f"Канал для отправки: {event_settings['Channel']}\n"
+                                            f"Дата: {event_settings['Date']} {event_settings['Time']}"
+                            ),
+                            components=[
+                                Button(label='Создать', style=ButtonStyle.green, custom_id='10')
+                            ]
+                        )
+                        response = await bot.wait_for('button_click', check=lambda i: i.author == msg.author)
+                        if response.custom_id == '10':
+                            await menu_msg.delete()
+                            await events.add_event(event_settings)
 
 
 class AdminMenu(Menu):
@@ -145,6 +201,7 @@ class Events:
     async def add_event(self, event_settings):
         event_title = f"{event_settings['Name']} [{event_settings['Type']}]\n" \
                       f"Лидер: {event_settings['Leader']}\n" \
+                      f"Дата: {event_settings['Date']} {event_settings['Time']}\n" \
                       f"ID события:"
         event_members = {
             'Tanks': [],
@@ -152,12 +209,20 @@ class Events:
             'DPS': []
         }
         new_line = '\n'
+        colour = discord.Colour.default()
+        if event_settings['Type'] == 'PvE':
+            colour = discord.Colour.blue()
+        elif event_settings['Type'] == 'PvP':
+            colour = discord.Colour.red()
+        elif event_settings['Type'] == 'Peaceful':
+            colour = discord.Colour.green()
         event_description = \
             '\n'.join([f'{key}:{new_line.join(event_members[key])}\n' for key in event_members])
         event_msg = await bot_install.guild_channels[event_settings['Channel']].send(
             embed=discord.Embed(
                 title=event_title,
-                description=event_description
+                description=event_description,
+                colour=colour
             )
         )
         event_title += str(event_msg.id)
@@ -168,7 +233,8 @@ class Events:
         await event_msg.edit(
             embed=discord.Embed(
                 title=event_title,
-                description=event_description
+                description=event_description,
+                colour=colour
             ),
             components=[
                 [
@@ -180,9 +246,9 @@ class Events:
         )
         while True:
             response = await bot.wait_for('button_click')
-            await self.event_join(response)
+            await self.event_join(response, colour)
 
-    async def event_join(self, response):
+    async def event_join(self, response, colour):
         new_line = '\n'
         event_title = sql_connection(f'SELECT event_title FROM events '
                                      f'WHERE event_msg_id={int(response.custom_id[:-3])}')[0]
@@ -209,7 +275,8 @@ class Events:
             await event_msg.edit(
                 embed=discord.Embed(
                     title=event_title,
-                    description=event_description
+                    description=event_description,
+                    colour=colour
                 )
             )
         elif response.component.label == 'Healer' and response.author.display_name not in event_members['Healers']:
@@ -223,7 +290,8 @@ class Events:
             await event_msg.edit(
                 embed=discord.Embed(
                     title=event_title,
-                    description=event_description
+                    description=event_description,
+                    colour=colour
                 )
             )
         elif response.component.label == 'DPS' and \
@@ -238,7 +306,8 @@ class Events:
             await event_msg.edit(
                 embed=discord.Embed(
                     title=event_title,
-                    description=event_description
+                    description=event_description,
+                    colour=colour
                 )
             )
         sql_connection(
@@ -327,9 +396,17 @@ async def on_message(message):
         await msg.reply(content='test2')
 
     if message.content == '!test3':
-        mem = await bot.get_guild(message.guild.id).fetch_member(message.author.id)
-        print(mem)
-        print(message.author.display_name)
+        now = datetime.datetime.now()
+        print(now)
+        print(now + datetime.timedelta(days=7))
+        next_day = now.date() + datetime.timedelta(days=1)
+        await message.channel.send(
+            embed=discord.Embed(
+                title='TEST',
+                description=str(next_day.strftime("%d %B %Y (%A)")),
+                colour=discord.Colour.random()
+            )
+        )
 
 
 if __name__ == '__main__':
